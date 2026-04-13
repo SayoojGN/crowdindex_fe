@@ -14,42 +14,45 @@ export default function EntityHistory() {
   }, [dispatch])
 
   return (
-    <div className="flex flex-col h-full">
-      <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="flex flex-col h-full py-2">
+      <p
+        className="px-4 py-2 text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]/60"
+        style={{ fontFamily: 'var(--font-heading)' }}
+      >
         Entity History
       </p>
 
       {status === 'loading' && (
-        <div className="flex flex-col gap-2 px-3 pb-2 animate-pulse">
+        <div className="flex flex-col gap-3 px-4 py-2 animate-pulse">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="space-y-1">
-              <div className="h-3 w-32 rounded bg-sidebar-accent" />
-              <div className="h-2 w-20 rounded bg-sidebar-accent" />
+            <div key={i} className="space-y-1.5">
+              <div className="h-2.5 w-28 rounded-full bg-[#f0f0f0]" />
+              <div className="h-2 w-16 rounded-full bg-[#f0f0f0]" />
             </div>
           ))}
         </div>
       )}
 
       {status === 'failed' && (
-        <p className="px-3 text-xs text-muted-foreground">{error}</p>
+        <p className="px-4 text-xs text-[#e55a2b]/70">{error}</p>
       )}
 
       {status === 'succeeded' && list.length === 0 && (
-        <p className="px-3 text-xs text-muted-foreground">No entities yet.</p>
+        <p className="px-4 text-xs text-[#6b6b6b]/50">No entities yet.</p>
       )}
 
       {status === 'succeeded' && list.length > 0 && (
-        <ul className="flex flex-col gap-0.5 px-2 pb-2">
+        <ul className="flex flex-col gap-0.5 px-3">
           {list.map((entity) => (
             <li key={entity.id}>
               <Link
                 href={`/dashboard/entity/${entity.canonical_name}`}
-                className="block rounded-md px-2 py-1.5 hover:bg-sidebar-accent transition-colors"
+                className="block rounded-xl px-3 py-2 hover:bg-[#f0f0f0] transition-colors group"
               >
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
+                <p className="text-sm font-medium text-[#6b6b6b] group-hover:text-[#0e0e0e] truncate transition-colors">
                   {entity.canonical_name}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] text-[#6b6b6b]/50 mt-0.5">
                   {new Date(entity.created_at).toLocaleDateString(undefined, {
                     month: 'short',
                     day: 'numeric',

@@ -40,12 +40,21 @@ export default function EntityViewPage({
   }, [canonical_name]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="flex flex-col gap-6 p-6 max-w-lg">
+    <div className="flex flex-col gap-8 p-8 max-w-xl">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight capitalize">
+        <p
+          className="text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]/60 mb-1"
+          style={{ fontFamily: 'var(--font-heading)' }}
+        >
+          Entity
+        </p>
+        <h1
+          className="text-3xl font-semibold tracking-tight text-[#0e0e0e] capitalize"
+          style={{ fontFamily: 'var(--font-heading)' }}
+        >
           {canonical_name.replace(/-/g, ' ')}
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Entity details and scores</p>
+        <p className="text-sm text-[#6b6b6b] mt-1">Details and scores</p>
       </div>
 
       <EntityDetail />
