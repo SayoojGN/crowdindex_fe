@@ -2,83 +2,187 @@
 
 import { useActionState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { login } from '../actions'
 
 export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(login, null)
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5]">
-      <div className="w-full max-w-sm px-4 space-y-8">
+    <div
+      className="min-h-screen flex"
+      style={{ backgroundColor: '#fcf9f2', fontFamily: 'var(--font-sans)' }}
+    >
+      {/* Left decorative panel */}
+      <div
+        className="hidden lg:flex flex-col justify-between w-[44%] p-12 relative overflow-hidden"
+        style={{ backgroundColor: '#1c1c18' }}
+      >
+        {/* Ambient blobs */}
+        <div
+          className="absolute top-[-10%] right-[-10%] w-[70%] h-[60%] rounded-full pointer-events-none"
+          style={{ background: '#9e422533', filter: 'blur(100px)' }}
+        />
+        <div
+          className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full pointer-events-none"
+          style={{ background: '#46606633', filter: 'blur(80px)' }}
+        />
 
         {/* Wordmark */}
-        <div className="text-center space-y-1">
-          <h1
-            className="text-3xl font-semibold tracking-tight text-[#0e0e0e]"
-            style={{ fontFamily: 'var(--font-heading)' }}
-          >
-            CrowdIndex
-          </h1>
-          <p className="text-sm text-[#6b6b6b]">Sign in to your account</p>
-        </div>
+        <span
+          className="text-2xl font-extrabold tracking-tighter relative z-10"
+          style={{ color: '#fcf9f2', fontFamily: 'var(--font-heading)' }}
+        >
+          CrowdIndex
+        </span>
 
-        {/* Card */}
-        <div className="rounded-2xl bg-white p-8 space-y-6 shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
-          <form action={formAction} className="space-y-5">
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-                className="w-full bg-[#f0f0f0] rounded-lg px-4 py-3 text-sm text-[#0e0e0e] placeholder:text-[#6b6b6b]/50 border-0 border-b-2 border-b-transparent focus:border-b-[#4664ff] focus:outline-none transition-colors"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                autoComplete="current-password"
-                placeholder="••••••••"
-                className="w-full bg-[#f0f0f0] rounded-lg px-4 py-3 text-sm text-[#0e0e0e] placeholder:text-[#6b6b6b]/50 border-0 border-b-2 border-b-transparent focus:border-b-[#4664ff] focus:outline-none transition-colors"
-              />
-            </div>
-
-            {state?.error && (
-              <p className="text-xs text-[#e55a2b] bg-[#e55a2b]/10 rounded-lg px-3 py-2">
-                {state.error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={isPending}
-              className="w-full rounded-full bg-[#4664ff] px-5 py-3 text-sm font-semibold text-white hover:bg-[#3355ee] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              style={{ fontFamily: 'var(--font-heading)' }}
+        {/* Illustration + tagline */}
+        <div className="relative z-10 flex flex-col items-center gap-8">
+          {/* <div className="relative w-full">
+            <Image
+              src="/image.png"
+              alt="CrowdIndex analytics illustration"
+              width={240}
+              height={160}
+              className="w-full h-auto object-contain drop-shadow-xl"
+              priority
+            />
+          </div> */}
+          <div className="text-center space-y-3">
+            <p
+              className="text-2xl font-extrabold tracking-tight leading-snug"
+              style={{ color: '#fcf9f2', fontFamily: 'var(--font-heading)' }}
             >
-              {isPending ? 'Signing in…' : 'Sign in'}
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-[#6b6b6b]">
-            Don&apos;t have an account?{' '}
-            <Link href="/auth/signup" className="text-[#4664ff] hover:text-[#3355ee] transition-colors font-medium">
-              Sign up
-            </Link>
-          </p>
+              Catch the latest crowd{' '}
+              <span style={{ color: '#9e4225', fontStyle: 'italic' }}>opinions</span>
+              {' '}about various topics.
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: 'rgba(252,249,242,0.5)' }}>
+              Intelligence derived from millions of real crowd-sourced posts, structured by dimension and sentiment.
+            </p>
+          </div>
         </div>
 
+        {/* Bottom label */}
+        <p
+          className="text-[10px] uppercase tracking-widest relative z-10"
+          style={{ color: 'rgba(252,249,242,0.3)', fontFamily: 'var(--font-heading)' }}
+        >
+          © 2025 CrowdIndex Intelligence
+        </p>
+      </div>
+
+      {/* Right form panel */}
+      <div className="flex-1 flex items-center justify-center px-6 py-16">
+        <div className="w-full max-w-sm space-y-8">
+
+          {/* Header */}
+          <div className="space-y-2">
+            <h1
+              className="text-3xl font-extrabold tracking-tight"
+              style={{ color: '#1c1c18', fontFamily: 'var(--font-heading)' }}
+            >
+              Sign in to your account
+            </h1>
+            <p className="text-sm" style={{ color: '#424849' }}>
+              Don&apos;t have an account?{' '}
+              <Link
+                href="/auth/signup"
+                className="font-semibold transition-colors hover:opacity-80"
+                style={{ color: '#9e4225' }}
+              >
+                Sign up 
+              </Link>
+            </p>
+          </div>
+
+          {/* Form card */}
+          <div
+            className="rounded-2xl p-8 space-y-5"
+            style={{
+              backgroundColor: '#fff',
+              border: '1px solid rgba(193,199,201,0.25)',
+              boxShadow: '0 4px 32px rgba(28,28,24,0.06)',
+            }}
+          >
+            <form action={formAction} className="space-y-5">
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="email"
+                  className="text-[10px] font-bold uppercase tracking-widest"
+                  style={{ color: '#424849', fontFamily: 'var(--font-heading)' }}
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  className="w-full rounded-lg px-4 py-3 text-sm outline-none transition-all"
+                  style={{
+                    backgroundColor: '#f6f3ec',
+                    color: '#1c1c18',
+                    border: '1.5px solid transparent',
+                  }}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#9e4225')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'transparent')}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="password"
+                  className="text-[10px] font-bold uppercase tracking-widest"
+                  style={{ color: '#424849', fontFamily: 'var(--font-heading)' }}
+                >
+                  Password
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  className="w-full rounded-lg px-4 py-3 text-sm outline-none transition-all"
+                  style={{
+                    backgroundColor: '#f6f3ec',
+                    color: '#1c1c18',
+                    border: '1.5px solid transparent',
+                  }}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#9e4225')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'transparent')}
+                />
+              </div>
+
+              {state?.error && (
+                <p
+                  className="text-xs rounded-lg px-3 py-2"
+                  style={{ color: '#9e4225', backgroundColor: '#ffdbd14d' }}
+                >
+                  {state.error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={isPending}
+                className="w-full inline-flex items-center justify-between pl-6 pr-2 py-2 rounded-full font-bold text-sm text-white transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: '#1c1c18',
+                  fontFamily: 'var(--font-heading)',
+                  boxShadow: '0 0 0 1.5px rgba(158,66,37,0.35), 0 8px 24px rgba(0,0,0,0.14)',
+                }}
+              >
+                {isPending ? 'Signing in…' : 'Sign in'}
+              </button>
+            </form>
+          </div>
+
+        </div>
       </div>
     </div>
   )
