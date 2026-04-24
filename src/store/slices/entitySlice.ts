@@ -11,9 +11,46 @@ export interface Entity {
   user_id: string
 }
 
-export interface EntityScore {
-  score: number
-  label: string
+export interface DimensionScore {
+  id: string
+  extraction_id: string
+  dimension: string
+  score: number | null
+  severity: string | null
+  dimension_type: 'evaluative' | 'enumerative'
+  item_name: string | null
+  evidence: string
+}
+
+export interface AnalysisDimension {
+  dimension: string
+  dimension_type: 'evaluative' | 'enumerative'
+  overall_sentiment: 'positive' | 'neutral' | 'negative'
+  overall_score: number | null
+  items: Record<string, unknown>
+}
+
+export interface AnalysisPost {
+  post_id: string
+  content: string
+  posted_at: string
+  url: string
+  source_type: string
+  extraction_id: string
+  dimensions: AnalysisDimension[]
+}
+
+interface AnalysisResponse {
+  data: AnalysisPost[]
+}
+
+export interface MetricDataPoint {
+  date: string
+  scores: Record<string, number | string[]>
+}
+
+interface MetricsResponse {
+  data: MetricDataPoint[]
 }
 
 interface EntitiesResponse {
@@ -34,9 +71,15 @@ interface EntityState {
   createStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
   createError: string | null
   selected: Entity | null
-  scores: EntityScore[]
+  scores: DimensionScore[]
   scoresStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
   scoresError: string | null
+  analysis: AnalysisPost[]
+  analysisStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
+  analysisError: string | null
+  metrics: MetricDataPoint[]
+  metricsStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
+  metricsError: string | null
 }
 
 const initialState: EntityState = {
@@ -49,6 +92,12 @@ const initialState: EntityState = {
   scores: [],
   scoresStatus: 'idle',
   scoresError: null,
+  analysis: [],
+  analysisStatus: 'idle',
+  analysisError: null,
+  metrics: [],
+  metricsStatus: 'idle',
+  metricsError: null,
 }
 
 export const fetchEntities = createAsyncThunk<
@@ -79,16 +128,48 @@ export const createEntity = createAsyncThunk<
   }
 })
 
-export const fetchEntityScores = createAsyncThunk<
-  EntityScore[],
+export const fetchEntityAnalysis = createAsyncThunk<
+  AnalysisPost[],
+  string,
+  { rejectValue: string }
+>('entities/fetchAnalysis', async (canonicalName, { rejectWithValue }) => {
+  try {
+    const response = await apiClient.get<AnalysisResponse>(
+      `/entity/${encodeURIComponent(canonicalName)}/post-analysis`
+    )
+    return response.data.data
+  } catch (err: unknown) {
+    const error = err as { message: string }
+    return rejectWithValue(error.message ?? 'Failed to fetch analysis')
+  }
+})
+
+export const fetchEntityMetrics = createAsyncThunk<
+  MetricDataPoint[],
+  string,
+  { rejectValue: string }
+>('entities/fetchMetrics', async (canonicalName, { rejectWithValue }) => {
+  try {
+    const response = await apiClient.get<MetricsResponse>(
+      `/entity/${encodeURIComponent(canonicalName)}/daily-metrics`
+    )
+    return response.data.data
+  } catch (err: unknown) {
+    const error = err as { message: string }
+    return rejectWithValue(error.message ?? 'Failed to fetch metrics')
+  }
+})
+
+export const fetchDimensionScores = createAsyncThunk<
+  DimensionScore[],
   string,
   { rejectValue: string }
 >('entities/fetchScores', async (canonicalName, { rejectWithValue }) => {
   try {
-    const response = await apiClient.get<EntityScore[]>(
+    const response = await apiClient.get<{ data: DimensionScore[] }>(
       `/entity/${encodeURIComponent(canonicalName)}/dimension-scores`
     )
-    return response.data
+    return response.data.data
   } catch (err: unknown) {
     const error = err as { message: string }
     return rejectWithValue(error.message ?? 'Failed to fetch scores')
@@ -108,12 +189,24 @@ const entitySlice = createSlice({
       state.scores = []
       state.scoresStatus = 'idle'
       state.scoresError = null
+      state.analysis = []
+      state.analysisStatus = 'idle'
+      state.analysisError = null
+      state.metrics = []
+      state.metricsStatus = 'idle'
+      state.metricsError = null
     },
     clearSelected(state) {
       state.selected = null
       state.scores = []
       state.scoresStatus = 'idle'
       state.scoresError = null
+      state.analysis = []
+      state.analysisStatus = 'idle'
+      state.analysisError = null
+      state.metrics = []
+      state.metricsStatus = 'idle'
+      state.metricsError = null
     },
   },
   extraReducers: (builder) => {
@@ -143,15 +236,39 @@ const entitySlice = createSlice({
         state.createStatus = 'failed'
         state.createError = action.payload ?? 'Unknown error'
       })
-      .addCase(fetchEntityScores.pending, (state) => {
+      .addCase(fetchEntityAnalysis.pending, (state) => {
+        state.analysisStatus = 'loading'
+        state.analysisError = null
+      })
+      .addCase(fetchEntityAnalysis.fulfilled, (state, action) => {
+        state.analysisStatus = 'succeeded'
+        state.analysis = action.payload
+      })
+      .addCase(fetchEntityAnalysis.rejected, (state, action) => {
+        state.analysisStatus = 'failed'
+        state.analysisError = action.payload ?? 'Unknown error'
+      })
+      .addCase(fetchEntityMetrics.pending, (state) => {
+        state.metricsStatus = 'loading'
+        state.metricsError = null
+      })
+      .addCase(fetchEntityMetrics.fulfilled, (state, action) => {
+        state.metricsStatus = 'succeeded'
+        state.metrics = action.payload
+      })
+      .addCase(fetchEntityMetrics.rejected, (state, action) => {
+        state.metricsStatus = 'failed'
+        state.metricsError = action.payload ?? 'Unknown error'
+      })
+      .addCase(fetchDimensionScores.pending, (state) => {
         state.scoresStatus = 'loading'
         state.scoresError = null
       })
-      .addCase(fetchEntityScores.fulfilled, (state, action) => {
+      .addCase(fetchDimensionScores.fulfilled, (state, action) => {
         state.scoresStatus = 'succeeded'
         state.scores = action.payload
       })
-      .addCase(fetchEntityScores.rejected, (state, action) => {
+      .addCase(fetchDimensionScores.rejected, (state, action) => {
         state.scoresStatus = 'failed'
         state.scoresError = action.payload ?? 'Unknown error'
       })

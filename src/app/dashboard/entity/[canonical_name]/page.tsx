@@ -4,10 +4,13 @@ import { use, useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '@/store'
 import {
   fetchEntities,
-  fetchEntityScores,
+  fetchDimensionScores,
   setSelectedEntity,
 } from '@/store/slices/entitySlice'
 import EntityDetail from '../../EntityDetail'
+import SentimentChart from './SentimentChart'
+import EvidenceTable from './EvidenceTable'
+import RecentPosts from './RecentPosts'
 
 export default function EntityViewPage({
   params,
@@ -32,7 +35,7 @@ export default function EntityViewPage({
       const entity = entities.find((e) => e.canonical_name === canonical_name)
       if (entity) {
         dispatch(setSelectedEntity(entity))
-        dispatch(fetchEntityScores(canonical_name))
+        dispatch(fetchDimensionScores(canonical_name))
       }
     }
 
@@ -40,7 +43,8 @@ export default function EntityViewPage({
   }, [canonical_name]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="flex flex-col gap-8 p-8 max-w-xl">
+    <div className="flex flex-col gap-8 p-8 w-full">
+      {/* Header */}
       <div>
         <p
           className="text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]/60 mb-1"
@@ -54,10 +58,19 @@ export default function EntityViewPage({
         >
           {canonical_name.replace(/-/g, ' ')}
         </h1>
-        <p className="text-sm text-[#6b6b6b] mt-1">Details and scores</p>
       </div>
 
+      {/* Entity info + scores */}
       <EntityDetail />
+
+      {/* Sentiment trends chart */}
+      <SentimentChart canonicalName={canonical_name} />
+
+      {/* Enumerative evidence tables */}
+      <EvidenceTable />
+
+      {/* Recent posts */}
+      <RecentPosts canonicalName={canonical_name} />
     </div>
   )
 }

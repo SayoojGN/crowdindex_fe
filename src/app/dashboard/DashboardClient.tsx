@@ -2,22 +2,31 @@
 
 import { useEffect } from 'react'
 import { useAppDispatch, useAppSelector } from '@/store'
-import { fetchDashboardStats, fetchDashboardActivities } from '@/store/slices/dashboardSlice'
+import {
+  fetchDashboardStats,
+  fetchDashboardActivities,
+  fetchDashboardData,
+  type DashboardRow,
+} from '@/store/slices/dashboardSlice'
 
 export default function DashboardClient() {
   const dispatch = useAppDispatch()
   const {
     stats,
     activities,
+    rows,
     statsStatus,
     activitiesStatus,
+    rowsStatus,
     statsError,
     activitiesError,
+    rowsError,
   } = useAppSelector((s) => s.dashboard)
 
   useEffect(() => {
     dispatch(fetchDashboardStats())
     dispatch(fetchDashboardActivities())
+    dispatch(fetchDashboardData())
   }, [dispatch])
 
   const isLoading = statsStatus === 'loading' || activitiesStatus === 'loading'
@@ -28,36 +37,117 @@ export default function DashboardClient() {
 
   return (
     <>
-      {statsError && <ErrorBanner message={statsError} />}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {stats.map((stat) => (
-          <StatCard key={stat.label} {...stat} />
-        ))}
-      </div>
+      {rowsStatus === 'succeeded' && rows.length > 0 && (() => {
+        const ranked = rankByOverall(rows)
+        const top = ranked.slice(0, 3)
+        const bottom = [...ranked].reverse().slice(0, 3)
+        return (
+          <div className="grid grid-cols-2 gap-4">
+            <PerformersCard title="Top Performers" rows={top} bg="#4CAF50" />
+            <PerformersCard title="Bottom Performers" rows={bottom} bg="#FF5722" />
+          </div>
+        )
+      })()}
 
-      {activitiesError && <ErrorBanner message={activitiesError} />}
-
-      <div className="rounded-2xl bg-white p-6 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
-        <h2
-          className="text-sm font-semibold uppercase tracking-widest text-[#6b6b6b] mb-5"
-          style={{ fontFamily: 'var(--font-heading)' }}
-        >
-          Recent Activity
-        </h2>
-        <div className="space-y-0">
-          {activities.map((activity, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between py-3 text-sm"
-              style={{ borderBottom: i < activities.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
-            >
-              <span className="text-[#0e0e0e]">{activity.description}</span>
-              <span className="text-[#6b6b6b] tabular-nums">{activity.time}</span>
-            </div>
-          ))}
+      <div className="rounded-2xl bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="px-6 py-5">
+          <h2
+            className="text-sm font-semibold uppercase tracking-widest text-[#6b6b6b]"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            Entities
+          </h2>
         </div>
+
+        {rowsError && (
+          <div className="px-6 pb-5">
+            <ErrorBanner message={rowsError} />
+          </div>
+        )}
+
+        {rowsStatus === 'loading' && (
+          <div className="px-6 pb-5 space-y-3 animate-pulse">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex gap-6">
+                <div className="h-2.5 w-32 rounded-full bg-[#f0f0f0]" />
+                <div className="h-2.5 w-48 rounded-full bg-[#f0f0f0]" />
+                <div className="h-2.5 w-16 rounded-full bg-[#f0f0f0] ml-auto" />
+                <div className="h-2.5 w-16 rounded-full bg-[#f0f0f0]" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {rowsStatus !== 'loading' && (() => {
+          const scoreKeys = rows.length > 0 ? Object.keys(rows[0].scores) : []
+          const colCount = 2 + scoreKeys.length
+          return (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                    {['Entity Name', 'Synonyms', ...scoreKeys.map((k) => `${k} Score`)].map((col) => (
+                      <th
+                        key={col}
+                        className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]/60"
+                        style={{ fontFamily: 'var(--font-heading)' }}
+                      >
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.length === 0 && rowsStatus === 'succeeded' && (
+                    <tr>
+                      <td colSpan={colCount} className="px-6 py-8 text-center text-[#6b6b6b]">
+                        No entities found.
+                      </td>
+                    </tr>
+                  )}
+                  {rows.map((row, i) => (
+                    <tr
+                      key={row.entity.id}
+                      style={{ borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
+                    >
+                      <td className="px-6 py-4 font-medium text-[#0e0e0e] capitalize">
+                        {row.entity.canonical_name}
+                      </td>
+                      <td className="px-6 py-4 text-[#6b6b6b]">
+                        {row.entity.synonyms?.length > 0
+                          ? row.entity.synonyms.join(', ')
+                          : <span className="text-[#6b6b6b]/40">—</span>}
+                      </td>
+                      {scoreKeys.map((key) => (
+                        <td
+                          key={key}
+                          className="px-6 py-4 tabular-nums font-semibold text-[#4664ff]"
+                          style={{ fontFamily: 'var(--font-heading)' }}
+                        >
+                          {(row.scores[key] ?? 0).toFixed(2)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        })()}
       </div>
+
+      {/* {rowsStatus === 'succeeded' && rows.length > 0 && (() => {
+        const ranked = rankByOverall(rows)
+        const top = ranked.slice(0, 3)
+        const bottom = [...ranked].reverse().slice(0, 3)
+        return (
+          <div className="grid grid-cols-2 gap-4">
+            <PerformersCard title="Top Performers" rows={top} />
+            <PerformersCard title="Bottom Performers" rows={bottom} />
+          </div>
+        )
+      })()} */}
     </>
   )
 }
@@ -86,6 +176,67 @@ function ErrorBanner({ message }: { message: string }) {
   return (
     <div className="rounded-xl bg-[#e55a2b]/10 px-4 py-3 text-sm text-[#e55a2b]">
       {message}
+    </div>
+  )
+}
+
+function overallScore(row: DashboardRow): number {
+  const vals = Object.values(row.scores)
+  if (vals.length === 0) return 0
+  return vals.reduce((sum, v) => sum + v, 0) / vals.length
+}
+
+function rankByOverall(rows: DashboardRow[]) {
+  return [...rows].sort((a, b) => overallScore(b) - overallScore(a))
+}
+
+function PerformersCard({
+  title,
+  rows,
+  bg,
+}: {
+  title: string
+  rows: DashboardRow[]
+  bg: string
+}) {
+  return (
+    <div className="rounded-2xl p-6 shadow-[0_4px_24px_rgba(0,0,0,0.08)]" style={{ backgroundColor: bg }}>
+      <h2
+        className="text-[10px] font-semibold uppercase tracking-widest text-white/70 mb-4"
+        style={{ fontFamily: 'var(--font-heading)' }}
+      >
+        {title}
+      </h2>
+      <ul className="space-y-0">
+        {rows.map((row, i) => {
+          const overall = overallScore(row)
+          return (
+            <li
+              key={row.entity.id}
+              className="flex items-center justify-between py-3 text-sm"
+              style={{ borderBottom: i < rows.length - 1 ? '1px solid rgba(255,255,255,0.12)' : 'none' }}
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className="text-xs font-semibold tabular-nums w-5 text-white/50"
+                  style={{ fontFamily: 'var(--font-heading)' }}
+                >
+                  #{i + 1}
+                </span>
+                <span className="capitalize font-medium text-white">
+                  {row.entity.canonical_name}
+                </span>
+              </div>
+              <span
+                className="tabular-nums font-semibold text-sm text-white"
+                style={{ fontFamily: 'var(--font-heading)' }}
+              >
+                {overall.toFixed(2)}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }
