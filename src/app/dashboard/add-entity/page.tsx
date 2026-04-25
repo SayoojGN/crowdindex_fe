@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from '@/store'
 import {
   createEntity,
   fetchEntities,
-  fetchEntityScores,
+  fetchDimensionScores,
   resetCreateStatus,
   clearSelected,
 } from '@/store/slices/entitySlice'
@@ -20,7 +20,7 @@ export default function AddEntityPage() {
 
   useEffect(() => {
     if (createStatus === 'succeeded') {
-      dispatch(fetchEntityScores(canonicalName))
+      dispatch(fetchDimensionScores(canonicalName))
       dispatch(fetchEntities())
       dispatch(resetCreateStatus())
     }
