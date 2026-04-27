@@ -44,6 +44,33 @@ interface AnalysisResponse {
   data: AnalysisPost[]
 }
 
+export interface ExtractionMention {
+  id: string
+  dimension: string
+  score: number | null
+  severity: string | null
+  dimension_type: 'evaluative' | 'enumerative'
+  item_name: string | null
+  evidence: string
+}
+
+export interface PostForDate {
+  id: string
+  source_id: string
+  source_type: string
+  entity_id: string
+  content: string
+  author_hash: string
+  url: string
+  source_meta: Record<string, unknown>
+  posted_at: string
+  ingested_at: string
+  analysis_status: string
+  updated_at: string
+  batch_id: string | null
+  extraction_mentions: ExtractionMention[]
+}
+
 export interface MetricDataPoint {
   date: string
   scores: Record<string, number | string[]>
@@ -80,6 +107,9 @@ interface EntityState {
   metrics: MetricDataPoint[]
   metricsStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
   metricsError: string | null
+  postsForDate: PostForDate[]
+  postsForDateStatus: 'idle' | 'loading' | 'succeeded' | 'failed'
+  postsForDateError: string | null
 }
 
 const initialState: EntityState = {
@@ -98,6 +128,9 @@ const initialState: EntityState = {
   metrics: [],
   metricsStatus: 'idle',
   metricsError: null,
+  postsForDate: [],
+  postsForDateStatus: 'idle',
+  postsForDateError: null,
 }
 
 export const fetchEntities = createAsyncThunk<
@@ -160,6 +193,23 @@ export const fetchEntityMetrics = createAsyncThunk<
   }
 })
 
+export const fetchPostsForDate = createAsyncThunk<
+  PostForDate[],
+  { canonicalName: string; date: string },
+  { rejectValue: string }
+>('entities/fetchPostsForDate', async ({ canonicalName, date }, { rejectWithValue }) => {
+  try {
+    const response = await apiClient.post<{ data: PostForDate[] }>(
+      `/entity/${encodeURIComponent(canonicalName)}/postForEntityDate`,
+      { date }
+    )
+    return response.data.data
+  } catch (err: unknown) {
+    const error = err as { message: string }
+    return rejectWithValue(error.message ?? 'Failed to fetch posts')
+  }
+})
+
 export const fetchDimensionScores = createAsyncThunk<
   DimensionScore[],
   string,
@@ -195,6 +245,9 @@ const entitySlice = createSlice({
       state.metrics = []
       state.metricsStatus = 'idle'
       state.metricsError = null
+      state.postsForDate = []
+      state.postsForDateStatus = 'idle'
+      state.postsForDateError = null
     },
     clearSelected(state) {
       state.selected = null
@@ -207,6 +260,9 @@ const entitySlice = createSlice({
       state.metrics = []
       state.metricsStatus = 'idle'
       state.metricsError = null
+      state.postsForDate = []
+      state.postsForDateStatus = 'idle'
+      state.postsForDateError = null
     },
   },
   extraReducers: (builder) => {
@@ -259,6 +315,19 @@ const entitySlice = createSlice({
       .addCase(fetchEntityMetrics.rejected, (state, action) => {
         state.metricsStatus = 'failed'
         state.metricsError = action.payload ?? 'Unknown error'
+      })
+      .addCase(fetchPostsForDate.pending, (state) => {
+        state.postsForDateStatus = 'loading'
+        state.postsForDateError = null
+        state.postsForDate = []
+      })
+      .addCase(fetchPostsForDate.fulfilled, (state, action) => {
+        state.postsForDateStatus = 'succeeded'
+        state.postsForDate = action.payload
+      })
+      .addCase(fetchPostsForDate.rejected, (state, action) => {
+        state.postsForDateStatus = 'failed'
+        state.postsForDateError = action.payload ?? 'Unknown error'
       })
       .addCase(fetchDimensionScores.pending, (state) => {
         state.scoresStatus = 'loading'

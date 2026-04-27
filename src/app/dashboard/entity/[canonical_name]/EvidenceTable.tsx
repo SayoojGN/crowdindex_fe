@@ -1,33 +1,190 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAppSelector } from '@/store'
 import type { DimensionScore } from '@/store/slices/entitySlice'
 
 const PAGE_SIZE = 20
 
-function SideEffectRow({ item, hasSeverity }: { item: DimensionScore; hasSeverity: boolean }) {
-  const showBadge = item.severity != null && item.severity !== 'null'
+function EvidenceTableSkeleton() {
+  const col = Array.from({ length: 10 })
   return (
-    <div className="flex items-start justify-between gap-3 px-5 py-3 text-sm">
-      <span className="text-[#0e0e0e] leading-snug">{item.evidence}</span>
-      {hasSeverity && (
-        showBadge ? (
-          <span
-            className="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-            style={{
-              backgroundColor: '#ff572218',
-              color: '#ff5722',
-              fontFamily: 'var(--font-heading)',
-            }}
-          >
-            {item.severity}
-          </span>
-        ) : (
-          <span className="shrink-0 text-[#6b6b6b]/40 text-xs">—</span>
-        )
-      )}
+    <div className="rounded-2xl bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden animate-pulse">
+      {/* Header */}
+      <div
+        className="flex items-center justify-between gap-4 px-6 py-4"
+        style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}
+      >
+        <div className="h-2 w-20 rounded-full bg-[#f0f0f0]" />
+        <div className="h-6 w-56 rounded-lg bg-[#f0f0f0]" />
+      </div>
+      {/* Two-column grid */}
+      <div className="grid grid-cols-2">
+        <div style={{ borderRight: '1px solid rgba(0,0,0,0.06)' }}>
+          {col.map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between px-5 py-3"
+              style={{ borderBottom: i < 9 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
+            >
+              <div className="h-3 w-32 rounded-full bg-[#f0f0f0]" />
+              <div className="h-4 w-14 rounded-full bg-[#f0f0f0]" />
+            </div>
+          ))}
+        </div>
+        <div>
+          {col.map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between px-5 py-3"
+              style={{ borderBottom: i < 9 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
+            >
+              <div className="h-3 w-32 rounded-full bg-[#f0f0f0]" />
+              <div className="h-4 w-14 rounded-full bg-[#f0f0f0]" />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
+  )
+}
+
+interface GroupedItem {
+  item_name: string
+  entries: DimensionScore[]
+  hasSeverity: boolean
+  topSeverity: string | null
+}
+
+function EvidenceModal({
+  group,
+  onClose,
+}: {
+  group: GroupedItem
+  onClose: () => void
+}) {
+  const overlayRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)' }}
+      onClick={(e) => { if (e.target === overlayRef.current) onClose() }}
+    >
+      <div
+        className="relative w-full max-w-lg max-h-[80vh] flex flex-col rounded-2xl bg-white shadow-[0_16px_48px_rgba(0,0,0,0.16)] overflow-hidden"
+      >
+        {/* Modal header */}
+        <div
+          className="flex items-start justify-between gap-3 px-6 py-4 shrink-0"
+          style={{ borderBottom: '1px solid rgba(0,0,0,0.07)' }}
+        >
+          <div>
+            <p
+              className="text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]/60 mb-0.5"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              Side Effect
+            </p>
+            <h2 className="text-[15px] font-semibold text-[#0e0e0e] leading-snug">
+              {group.item_name}
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="mt-0.5 shrink-0 rounded-full w-7 h-7 flex items-center justify-center text-[#6b6b6b] hover:bg-[#f0f0f0] transition-colors text-lg leading-none"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Evidence list */}
+        <div className="overflow-y-auto">
+          {group.entries.map((entry, i) => {
+            const showBadge = entry.severity != null && entry.severity !== 'null'
+            return (
+              <div
+                key={entry.id}
+                className="px-6 py-4"
+                style={{ borderBottom: i < group.entries.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
+              >
+                {showBadge && (
+                  <span
+                    className="inline-block mb-2 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+                    style={{
+                      backgroundColor: '#ff572218',
+                      color: '#ff5722',
+                      fontFamily: 'var(--font-heading)',
+                    }}
+                  >
+                    {entry.severity}
+                  </span>
+                )}
+                <p className="text-sm text-[#3a3a3a] leading-relaxed">{entry.evidence}</p>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Footer count */}
+        <div
+          className="shrink-0 px-6 py-3 flex items-center justify-end"
+          style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}
+        >
+          <span
+            className="text-[11px] text-[#6b6b6b]"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            {group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function GroupRow({ group, onClick, hasSeverityCol }: { group: GroupedItem; onClick: () => void; hasSeverityCol: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-start justify-between gap-3 px-5 py-3 text-sm text-left hover:bg-[#f7f7f7] transition-colors"
+    >
+      <span className="text-[#0e0e0e] leading-snug">{group.item_name}</span>
+      <div className="flex items-center gap-2 shrink-0">
+        {hasSeverityCol && (
+          group.topSeverity ? (
+            <span
+              className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+              style={{
+                backgroundColor: '#ff572218',
+                color: '#ff5722',
+                fontFamily: 'var(--font-heading)',
+              }}
+            >
+              {group.topSeverity}
+            </span>
+          ) : (
+            <span className="text-[#6b6b6b]/40 text-xs">—</span>
+          )
+        )}
+        {group.entries.length > 1 && (
+          <span
+            className="rounded-full bg-[#4664ff]/10 text-[#4664ff] text-[10px] font-semibold px-1.5 py-0.5"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            {group.entries.length}
+          </span>
+        )}
+      </div>
+    </button>
   )
 }
 
@@ -35,110 +192,133 @@ export default function EvidenceTable() {
   const { scores, scoresStatus } = useAppSelector((s) => s.entities)
   const [page, setPage] = useState(0)
   const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState<GroupedItem | null>(null)
 
+  if (scoresStatus === 'loading') return <EvidenceTableSkeleton />
   if (scoresStatus !== 'succeeded') return null
 
   const allItems = scores.filter((s) => s.dimension === 'side_effects')
   if (allItems.length === 0) return null
 
-  const q = query.trim().toLowerCase()
-  const items = q
-    ? allItems.filter(
-        (s) =>
-          s.evidence.toLowerCase().includes(q) ||
-          (s.item_name ?? '').toLowerCase().includes(q)
-      )
-    : allItems
+  // Group by item_name
+  const grouped: GroupedItem[] = []
+  const seen = new Map<string, GroupedItem>()
+  for (const entry of allItems) {
+    const key = entry.item_name ?? ''
+    if (!seen.has(key)) {
+      const g: GroupedItem = { item_name: key, entries: [], hasSeverity: false, topSeverity: null }
+      seen.set(key, g)
+      grouped.push(g)
+    }
+    const g = seen.get(key)!
+    g.entries.push(entry)
+    if (entry.severity != null && entry.severity !== 'null') {
+      g.hasSeverity = true
+      if (!g.topSeverity) g.topSeverity = entry.severity
+    }
+  }
 
-  const totalPages = Math.ceil(items.length / PAGE_SIZE)
+  const hasSeverityCol = grouped.some((g) => g.hasSeverity)
+
+  const q = query.trim().toLowerCase()
+  const filtered = q
+    ? grouped.filter((g) => g.item_name.toLowerCase().includes(q))
+    : grouped
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const safePage = Math.min(page, Math.max(totalPages - 1, 0))
-  const paged = items.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE)
+  const paged = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE)
   const left = paged.slice(0, 10)
   const right = paged.slice(10, 20)
-  const hasSeverity = items.some((s) => s.severity != null && s.severity !== 'null')
 
   const start = safePage * PAGE_SIZE + 1
-  const end = Math.min((safePage + 1) * PAGE_SIZE, items.length)
+  const end = Math.min((safePage + 1) * PAGE_SIZE, filtered.length)
 
   return (
-    <div className="rounded-2xl bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden">
-      {/* Header */}
-      <div
-        className="flex items-center justify-between gap-4 px-6 py-4"
-        style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}
-      >
-        <span
-          className="text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]/60 shrink-0"
-          style={{ fontFamily: 'var(--font-heading)' }}
-        >
-          Side Effects
-        </span>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => { setQuery(e.target.value); setPage(0) }}
-          placeholder="Search side effects…"
-          className="w-56 rounded-lg bg-[#f5f5f5] px-3 py-1.5 text-xs text-[#0e0e0e] outline-none placeholder:text-[#6b6b6b]/50 focus:ring-1 focus:ring-[#4664ff]/30"
-          style={{ fontFamily: 'var(--font-heading)' }}
-        />
-      </div>
-
-      {/* Two columns */}
-      <div className="grid grid-cols-2">
-        <div style={{ borderRight: '1px solid rgba(0,0,0,0.06)' }}>
-          {left.map((item, i) => (
-            <div
-              key={item.id}
-              style={{ borderBottom: i < left.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
-            >
-              <SideEffectRow item={item} hasSeverity={hasSeverity} />
-            </div>
-          ))}
-        </div>
-        <div>
-          {right.map((item, i) => (
-            <div
-              key={item.id}
-              style={{ borderBottom: i < right.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
-            >
-              <SideEffectRow item={item} hasSeverity={hasSeverity} />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Pagination footer */}
-      {totalPages > 1 && (
+    <>
+      <div className="rounded-2xl bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden">
+        {/* Header */}
         <div
-          className="flex items-center justify-between px-6 py-3"
-          style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}
+          className="flex items-center justify-between gap-4 px-6 py-4"
+          style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}
         >
           <span
-            className="text-[11px] text-[#6b6b6b]"
+            className="text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]/60 shrink-0"
             style={{ fontFamily: 'var(--font-heading)' }}
           >
-            {start}–{end} of {items.length}
+            Side Effects
           </span>
-          <div className="flex gap-1">
-            <button
-              disabled={safePage === 0}
-              onClick={() => setPage((p) => p - 1)}
-              className="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-30"
-              style={{ fontFamily: 'var(--font-heading)', backgroundColor: '#f0f0f0', color: '#6b6b6b' }}
-            >
-              ← Prev
-            </button>
-            <button
-              disabled={safePage === totalPages - 1}
-              onClick={() => setPage((p) => p + 1)}
-              className="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-30"
-              style={{ fontFamily: 'var(--font-heading)', backgroundColor: '#f0f0f0', color: '#6b6b6b' }}
-            >
-              Next →
-            </button>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setPage(0) }}
+            placeholder="Search side effects…"
+            className="w-56 rounded-lg bg-[#f5f5f5] px-3 py-1.5 text-xs text-[#0e0e0e] outline-none placeholder:text-[#6b6b6b]/50 focus:ring-1 focus:ring-[#4664ff]/30"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          />
+        </div>
+
+        {/* Two columns */}
+        <div className="grid grid-cols-2">
+          <div style={{ borderRight: '1px solid rgba(0,0,0,0.06)' }}>
+            {left.map((group, i) => (
+              <div
+                key={group.item_name}
+                style={{ borderBottom: i < left.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
+              >
+                <GroupRow group={group} onClick={() => setSelected(group)} hasSeverityCol={hasSeverityCol} />
+              </div>
+            ))}
+          </div>
+          <div>
+            {right.map((group, i) => (
+              <div
+                key={group.item_name}
+                style={{ borderBottom: i < right.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
+              >
+                <GroupRow group={group} onClick={() => setSelected(group)} hasSeverityCol={hasSeverityCol} />
+              </div>
+            ))}
           </div>
         </div>
+
+        {/* Pagination footer */}
+        {totalPages > 1 && (
+          <div
+            className="flex items-center justify-between px-6 py-3"
+            style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}
+          >
+            <span
+              className="text-[11px] text-[#6b6b6b]"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              {start}–{end} of {filtered.length}
+            </span>
+            <div className="flex gap-1">
+              <button
+                disabled={safePage === 0}
+                onClick={() => setPage((p) => p - 1)}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-30"
+                style={{ fontFamily: 'var(--font-heading)', backgroundColor: '#f0f0f0', color: '#6b6b6b' }}
+              >
+                ← Prev
+              </button>
+              <button
+                disabled={safePage === totalPages - 1}
+                onClick={() => setPage((p) => p + 1)}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-30"
+                style={{ fontFamily: 'var(--font-heading)', backgroundColor: '#f0f0f0', color: '#6b6b6b' }}
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {selected && (
+        <EvidenceModal group={selected} onClose={() => setSelected(null)} />
       )}
-    </div>
+    </>
   )
 }

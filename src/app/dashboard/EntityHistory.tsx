@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import { useAppDispatch, useAppSelector } from '@/store'
 import { fetchEntities } from '@/store/slices/entitySlice'
+import { Spinner } from '@/components/Spinner'
 
 export default function EntityHistory() {
   const dispatch = useAppDispatch()
@@ -22,16 +23,7 @@ export default function EntityHistory() {
         Entity History
       </p>
 
-      {status === 'loading' && (
-        <div className="flex flex-col gap-3 px-4 py-2 animate-pulse">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="space-y-1.5">
-              <div className="h-2.5 w-28 rounded-full bg-[#f0f0f0]" />
-              <div className="h-2 w-16 rounded-full bg-[#f0f0f0]" />
-            </div>
-          ))}
-        </div>
-      )}
+      {status === 'loading' && <Spinner className="py-6" />}
 
       {status === 'failed' && (
         <p className="px-4 text-xs text-[#e55a2b]/70">{error}</p>

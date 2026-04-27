@@ -8,6 +8,7 @@ import {
   fetchDashboardData,
   type DashboardRow,
 } from '@/store/slices/dashboardSlice'
+import { Spinner } from '@/components/Spinner'
 
 export default function DashboardClient() {
   const dispatch = useAppDispatch()
@@ -32,13 +33,13 @@ export default function DashboardClient() {
   const isLoading = statsStatus === 'loading' || activitiesStatus === 'loading'
 
   if (isLoading) {
-    return <LoadingSkeleton />
+    return <Spinner className="py-20" />
   }
 
   return (
     <>
 
-      {rowsStatus === 'succeeded' && rows.length > 0 && (() => {
+      {/* {rowsStatus === 'succeeded' && rows.length > 0 && (() => {
         const ranked = rankByOverall(rows)
         const top = ranked.slice(0, 3)
         const bottom = [...ranked].reverse().slice(0, 3)
@@ -48,7 +49,7 @@ export default function DashboardClient() {
             <PerformersCard title="Bottom Performers" rows={bottom} bg="#FF5722" />
           </div>
         )
-      })()}
+      })()} */}
 
       <div className="rounded-2xl bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="px-6 py-5">
@@ -66,18 +67,7 @@ export default function DashboardClient() {
           </div>
         )}
 
-        {rowsStatus === 'loading' && (
-          <div className="px-6 pb-5 space-y-3 animate-pulse">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex gap-6">
-                <div className="h-2.5 w-32 rounded-full bg-[#f0f0f0]" />
-                <div className="h-2.5 w-48 rounded-full bg-[#f0f0f0]" />
-                <div className="h-2.5 w-16 rounded-full bg-[#f0f0f0] ml-auto" />
-                <div className="h-2.5 w-16 rounded-full bg-[#f0f0f0]" />
-              </div>
-            ))}
-          </div>
-        )}
+        {rowsStatus === 'loading' && <Spinner />}
 
         {rowsStatus !== 'loading' && (() => {
           const scoreKeys = rows.length > 0 ? Object.keys(rows[0].scores) : []
@@ -241,29 +231,3 @@ function PerformersCard({
   )
 }
 
-function LoadingSkeleton() {
-  return (
-    <>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="rounded-2xl bg-white p-6 animate-pulse">
-            <div className="h-2.5 w-20 rounded-full bg-[#f0f0f0] mb-4" />
-            <div className="h-9 w-24 rounded-lg bg-[#f0f0f0] mb-3" />
-            <div className="h-2 w-28 rounded-full bg-[#f0f0f0]" />
-          </div>
-        ))}
-      </div>
-      <div className="rounded-2xl bg-white p-6 animate-pulse">
-        <div className="h-2.5 w-28 rounded-full bg-[#f0f0f0] mb-5" />
-        <div className="space-y-4">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex justify-between">
-              <div className="h-2.5 w-48 rounded-full bg-[#f0f0f0]" />
-              <div className="h-2.5 w-16 rounded-full bg-[#f0f0f0]" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </>
-  )
-}

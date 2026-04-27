@@ -4,6 +4,35 @@ import { useEffect, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '@/store'
 import { fetchEntityAnalysis, type AnalysisPost } from '@/store/slices/entitySlice'
 
+function RecentPostsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-black/[0.05] animate-pulse">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="bg-white px-6 py-5 space-y-3">
+          {/* source badge + date */}
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-16 rounded-full bg-[#f0f0f0]" />
+            <div className="h-3 w-20 rounded-full bg-[#f0f0f0] ml-auto" />
+          </div>
+          {/* content lines */}
+          <div className="space-y-2">
+            <div className="h-3 w-full rounded-full bg-[#f0f0f0]" />
+            <div className="h-3 w-4/5 rounded-full bg-[#f0f0f0]" />
+            <div className="h-3 w-3/4 rounded-full bg-[#f0f0f0]" />
+            <div className="h-3 w-2/3 rounded-full bg-[#f0f0f0]" />
+          </div>
+          {/* dimension badges + link */}
+          <div className="flex gap-1.5 pt-1">
+            <div className="h-4 w-14 rounded-full bg-[#f0f0f0]" />
+            <div className="h-4 w-16 rounded-full bg-[#f0f0f0]" />
+            <div className="h-3 w-16 rounded-full bg-[#f0f0f0] ml-auto self-center" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 type SentimentFilter = 'all' | 'positive' | 'neutral' | 'negative'
 type DimensionFilter = 'all' | string
 
@@ -160,23 +189,7 @@ export default function RecentPosts({ canonicalName }: { canonicalName: string }
 
       {/* Body */}
       <div style={{ borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-        {analysisStatus === 'loading' && (
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-px bg-black/[0.05]">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white px-6 py-5 space-y-3 animate-pulse">
-                <div className="flex gap-2">
-                  <div className="h-4 w-20 rounded-full bg-[#f0f0f0]" />
-                  <div className="h-4 w-16 rounded-full bg-[#f0f0f0]" />
-                </div>
-                <div className="space-y-2">
-                  <div className="h-3 w-full rounded-full bg-[#f0f0f0]" />
-                  <div className="h-3 w-4/5 rounded-full bg-[#f0f0f0]" />
-                  <div className="h-3 w-2/3 rounded-full bg-[#f0f0f0]" />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {analysisStatus === 'loading' && <RecentPostsSkeleton />}
 
         {analysisStatus === 'failed' && (
           <p className="px-6 py-8 text-sm text-center text-[#e55a2b]">{analysisError}</p>
