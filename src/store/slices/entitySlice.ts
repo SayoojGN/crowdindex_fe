@@ -84,11 +84,17 @@ interface EntitiesResponse {
   data: Entity[]
 }
 
+interface CreateEntityDimension {
+  name: string
+  type: 'evaluative' | 'enumerative'
+}
+
 interface CreateEntityPayload {
   canonical_name: string
   external_id?: string
   metadata?: Record<string, unknown>
   synonyms?: string[]
+  dimensions?: CreateEntityDimension[]
 }
 
 interface EntityState {

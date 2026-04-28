@@ -8,7 +8,7 @@ import {
   fetchEntityMetrics,
 } from '@/store/slices/entitySlice'
 import apiClient from '@/lib/axios/client'
-import { RefreshCw, Check } from 'lucide-react'
+import { RefreshCw, AlertCircle } from 'lucide-react'
 
 interface PollResponse {
   task_id: string
@@ -16,6 +16,7 @@ interface PollResponse {
   phase: string
   progress: { total: number; completed: number; failed: number }
   scrape: { posts_found: number; posts_new: number }
+  analysis: { relevant_completed: number; relevant_failed: number; irrelevant: number }
   started_at: string
   completed_at: string | null
   error: string | null
@@ -24,8 +25,8 @@ interface PollResponse {
 type AnalyzeState =
   | { status: 'idle' }
   | { status: 'triggering' }
-  | { status: 'polling'; taskId: string; phase: string; progress: { total: number; completed: number; failed: number } }
-  | { status: 'succeeded' }
+  | { status: 'polling'; taskId: string; phase: string; progress: { total: number; completed: number; failed: number }; scrape: { posts_found: number; posts_new: number }; analysis: { relevant_completed: number; relevant_failed: number; irrelevant: number } }
+  | { status: 'succeeded'; scrape: { posts_found: number; posts_new: number }; analysis: { relevant_completed: number; relevant_failed: number; irrelevant: number } }
   | { status: 'failed'; error: string }
 
 export default function EntityDetail() {
@@ -34,6 +35,7 @@ export default function EntityDetail() {
 
   const [analyzeState, setAnalyzeState] = useState<AnalyzeState>({ status: 'idle' })
   const [taskId, setTaskId] = useState<string | null>(null)
+  const [log, setLog] = useState<{ phase: string; timestamp: string }[]>([])
   const canonicalNameRef = useRef<string | null>(null)
 
   async function handleRunAnalysis() {
@@ -50,6 +52,8 @@ export default function EntityDetail() {
         taskId: res.data.task_id,
         phase: 'queued',
         progress: { total: 0, completed: 0, failed: 0 },
+        scrape: { posts_found: 0, posts_new: 0 },
+        analysis: { relevant_completed: 0, relevant_failed: 0, irrelevant: 0 },
       })
       setTaskId(res.data.task_id)
     } catch (err: unknown) {
@@ -73,7 +77,7 @@ export default function EntityDetail() {
 
         if (data.phase === 'completed') {
           setTaskId(null)
-          setAnalyzeState({ status: 'succeeded' })
+          setAnalyzeState({ status: 'succeeded', scrape: data.scrape, analysis: data.analysis })
           if (canonicalNameRef.current) {
             dispatch(fetchDimensionScores(canonicalNameRef.current))
             dispatch(fetchEntityAnalysis(canonicalNameRef.current))
@@ -88,6 +92,8 @@ export default function EntityDetail() {
             taskId,
             phase: data.phase,
             progress: data.progress,
+            scrape: data.scrape,
+            analysis: data.analysis,
           })
           pollTimeout = setTimeout(poll, 3000)
         }
@@ -108,10 +114,17 @@ export default function EntityDetail() {
   }, [taskId, dispatch])
 
   useEffect(() => {
-    if (analyzeState.status !== 'succeeded') return
-    const t = setTimeout(() => setAnalyzeState({ status: 'idle' }), 2000)
-    return () => clearTimeout(t)
-  }, [analyzeState.status])
+    if (analyzeState.status === 'polling') {
+      setLog((prev) => {
+        const last = prev[prev.length - 1]
+        if (last?.phase === analyzeState.phase) return prev
+        return [...prev, { phase: analyzeState.phase, timestamp: new Date().toLocaleTimeString() }]
+      })
+    }
+    if (analyzeState.status === 'idle' || analyzeState.status === 'triggering') {
+      setLog([])
+    }
+  }, [analyzeState])
 
   if (!selected) return null
 
@@ -124,117 +137,129 @@ export default function EntityDetail() {
     ? analyzeState.status === 'triggering'
       ? 'Starting…'
       : 'Analyzing…'
-    : isSucceeded
-    ? 'Updated!'
-    : 'Run Analysis'
+    : 'Fetch and Analyze'
 
-  const progress = isPolling ? analyzeState.progress : null
-  const progressPct =
-    progress && progress.total > 0
-      ? Math.round((progress.completed / progress.total) * 100)
-      : null
+  const STEPS = [
+    { key: 'queued',    label: 'Queued'    },
+    { key: 'scraping',  label: 'Scraping'  },
+    { key: 'analyzing', label: 'Analyzing' },
+    { key: 'complete',  label: 'Complete'  },
+  ]
 
-  const phaseLabel = isPolling
-    ? analyzeState.phase.charAt(0).toUpperCase() + analyzeState.phase.slice(1).replace(/_/g, ' ')
-    : null
+  const completedPhaseKeys = new Set(log.slice(0, -1).map((e) => e.phase))
+  const activePhaseKey = log[log.length - 1]?.phase ?? null
+  const stepFillPct = isSucceeded ? 100 : (Math.max(log.length - 1, 0) / 3) * 100
+
+  const getStepStatus = (stepKey: string): 'done' | 'active' | 'failed' | 'pending' => {
+    if (stepKey === 'complete') return isSucceeded ? 'done' : 'pending'
+    if (isSucceeded) return 'done'
+    if (isFailed) {
+      if (completedPhaseKeys.has(stepKey)) return 'done'
+      if (stepKey === activePhaseKey) return 'failed'
+      return 'pending'
+    }
+    if (completedPhaseKeys.has(stepKey)) return 'done'
+    if (stepKey === activePhaseKey && isPolling) return 'active'
+    return 'pending'
+  }
 
   return (
     <div className="rounded-2xl bg-white overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.06)]">
-      <div className="flex justify-between">
-        {/* Entity info */}
-        <div className="p-6 space-y-4">
-          <div>
-            <p
-              className="text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]/60 mb-1"
-              style={{ fontFamily: 'var(--font-heading)' }}
-            >
-              Entity Info
-            </p>
-          </div>
+      <div className="p-4 space-y-3">
 
-          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm">
-            <dt className="text-[#6b6b6b]">Created</dt>
-            <dd className="text-[#0e0e0e]">
-              {new Date(selected.created_at).toLocaleDateString(undefined, {
-                month: 'long',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </dd>
+        <button
+          onClick={handleRunAnalysis}
+          disabled={isBusy}
+          className={[
+            'flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-colors',
+            isBusy
+              ? 'bg-[#4664ff]/40 text-white cursor-not-allowed'
+              : 'bg-[#4664ff] text-white hover:bg-[#3355ee]',
+          ].join(' ')}
+          style={{ fontFamily: 'var(--font-heading)' }}
+        >
+          <RefreshCw className={['h-3.5 w-3.5 shrink-0', isBusy ? 'animate-spin' : ''].join(' ')} />
+          {buttonLabel}
+        </button>
 
-            {selected.synonyms && selected.synonyms.length > 0 && (
-              <>
-                <dt className="text-[#6b6b6b]">Synonyms</dt>
-                <dd className="flex flex-wrap gap-1.5">
-                  {selected.synonyms.map((s) => (
-                    <span
-                      key={s}
-                      className="rounded-full bg-[#f0f0f0] px-2.5 py-0.5 text-xs text-[#0e0e0e]"
-                    >
-                      {s}
-                    </span>
-                  ))}
-                </dd>
-              </>
-            )}
-          </dl>
+        {(isBusy || isFailed || isSucceeded) && (
+          <div className="w-full space-y-3 pb-1">
+            {/* Horizontal step tracker */}
+            <div className="relative">
+              {/* Track line — runs through dot centers */}
+              <div className="absolute top-[7px] left-[7px] right-[7px] h-0.5 bg-[#f0f0f0]">
+                <div
+                  className={[
+                    'h-full transition-all duration-500',
+                    isFailed ? 'bg-[#e55a2b]' : 'bg-[#4664ff]',
+                  ].join(' ')}
+                  style={{ width: `${stepFillPct}%` }}
+                />
+              </div>
 
-          {/* Run Analysis section */}
-        </div>
+              {/* Steps */}
+              <div className="relative flex justify-between">
+                {STEPS.map((step) => {
+                  const status = getStepStatus(step.key)
+                  return (
+                    <div key={step.key} className="flex flex-col items-center gap-1.5">
+                      <span className="relative flex h-3.5 w-3.5">
+                        {status === 'active' && (
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4664ff] opacity-50" />
+                        )}
+                        <span
+                          className={[
+                            'relative inline-flex h-3.5 w-3.5 rounded-full border',
+                            status === 'done'    ? 'bg-[#2d7d28] border-[#2d7d28]'
+                            : status === 'active' ? 'bg-[#4664ff] border-[#4664ff]'
+                            : status === 'failed' ? 'bg-[#e55a2b] border-[#e55a2b]'
+                            : 'bg-white border-[#d8d8d8]',
+                          ].join(' ')}
+                        />
+                      </span>
+                      <span
+                        className={[
+                          'text-[9px] font-medium',
+                          status === 'done'    ? 'text-[#2d7d28]'
+                          : status === 'active' ? 'text-[#4664ff]'
+                          : status === 'failed' ? 'text-[#e55a2b]'
+                          : 'text-[#6b6b6b]/50',
+                        ].join(' ')}
+                        style={{ fontFamily: 'var(--font-heading)' }}
+                      >
+                        {step.label}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
 
-        {/* Scores column (currently commented out, preserved) */}
-        {/* <div className="p-6 space-y-4 border-t border-black/5 md:border-t-0"> ... </div> */}
-        {/* Run Analysis section */}
-          <div className="pt-2 pr-6 space-y-3">
-            <div className="h-px bg-black/5" />
-
-            <button
-              onClick={handleRunAnalysis}
-              disabled={isBusy}
-              className={[
-                'flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-colors',
-                isSucceeded
-                  ? 'bg-[#2d7d28]/10 text-[#2d7d28] cursor-default'
-                  : isBusy
-                  ? 'bg-[#4664ff]/40 text-white cursor-not-allowed'
-                  : 'bg-[#4664ff] text-white hover:bg-[#3355ee]',
-              ].join(' ')}
-              style={{ fontFamily: 'var(--font-heading)' }}
-            >
-              {isSucceeded ? (
-                <Check className="h-3.5 w-3.5 shrink-0" />
-              ) : (
-                <RefreshCw className={['h-3.5 w-3.5 shrink-0', isBusy ? 'animate-spin' : ''].join(' ')} />
-              )}
-              {buttonLabel}
-            </button>
-
-            {isPolling && phaseLabel && (
-              <p className="text-xs text-[#6b6b6b]" style={{ fontFamily: 'var(--font-heading)' }}>
-                {phaseLabel}…
-              </p>
-            )}
-
-            {isPolling && progressPct !== null && (
-              <div className="space-y-1">
-                <div className="h-1.5 w-full rounded-full bg-[#f0f0f0] overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-[#4664ff] transition-all duration-300"
-                    style={{ width: `${progressPct}%` }}
-                  />
-                </div>
-                <p className="text-[10px] text-[#6b6b6b]/60" style={{ fontFamily: 'var(--font-heading)' }}>
-                  {progress!.completed} / {progress!.total} posts
+            {(isSucceeded || (isPolling && completedPhaseKeys.has('scraping'))) && (
+              <div className="space-y-1" style={{ fontFamily: 'var(--font-heading)' }}>
+                <p className="text-[10px] text-[#6b6b6b]">
+                  <span className="text-[#0e0e0e] font-medium">{analyzeState.scrape?.posts_new}</span>
+                  {' '}new posts found
+                  {analyzeState.scrape?.posts_found > 0 && (
+                    <span className="text-[#6b6b6b]/50"> · {analyzeState.scrape?.posts_found} total scraped</span>
+                  )}
+                </p>
+                <p className="text-[10px] text-[#6b6b6b]">
+                  <span className="text-[#2d7d28] font-medium">{analyzeState.analysis?.relevant_completed}</span>
+                  {' '}relevant posts analyzed
                 </p>
               </div>
             )}
 
+            {/* Error */}
             {isFailed && (
-              <p className="text-xs text-[#e55a2b] bg-[#e55a2b]/10 rounded-lg px-3 py-2">
-                {analyzeState.error}
-              </p>
+              <div className="flex items-start gap-2 rounded-lg bg-[#e55a2b]/10 px-3 py-2.5">
+                <AlertCircle className="h-3.5 w-3.5 text-[#e55a2b] shrink-0 mt-0.5" />
+                <p className="text-xs text-[#e55a2b]">{analyzeState.error}</p>
+              </div>
             )}
           </div>
+        )}
       </div>
     </div>
   )

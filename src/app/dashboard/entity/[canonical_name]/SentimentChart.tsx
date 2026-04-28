@@ -260,6 +260,14 @@ export default function SentimentChart({ canonicalName }: { canonicalName: strin
   const [active, setActive] = useState<string>('')
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
   const [selectedPoint, setSelectedPoint] = useState<{ date: string; idx: number } | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (selectedPoint && containerRef.current) {
+      const scrollParent = containerRef.current.closest('main')
+      scrollParent?.scrollBy({ top: 300, behavior: 'smooth' })
+    }
+  }, [selectedPoint])
 
   useEffect(() => {
     dispatch(fetchEntityMetrics(canonicalName))
@@ -289,7 +297,7 @@ export default function SentimentChart({ canonicalName }: { canonicalName: strin
   const pitch = total > 1 ? CHART_W / (total - 1) : CHART_W
 
   return (
-    <div className="rounded-2xl bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden">
+    <div ref={containerRef} className="rounded-2xl bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden">
       {/* Header */}
       <div className="flex items-start justify-between p-6 pb-4 gap-4 flex-wrap" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
         <div>

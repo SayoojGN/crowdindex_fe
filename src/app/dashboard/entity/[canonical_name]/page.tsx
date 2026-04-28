@@ -19,7 +19,7 @@ export default function EntityViewPage({
 }) {
   const { canonical_name } = use(params)
   const dispatch = useAppDispatch()
-  const { list, status } = useAppSelector((s) => s.entities)
+  const { list, status, selected } = useAppSelector((s) => s.entities)
 
   useEffect(() => {
     const load = async () => {
@@ -58,6 +58,30 @@ export default function EntityViewPage({
         >
           {canonical_name.replace(/-/g, ' ')}
         </h1>
+
+        {selected && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-2">
+            <span className="text-sm text-[#6b6b6b]">
+              {new Date(selected.created_at).toLocaleDateString(undefined, {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </span>
+            {selected.synonyms && selected.synonyms.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {selected.synonyms.map((s) => (
+                  <span
+                    key={s}
+                    className="rounded-full bg-[#f0f0f0] px-2.5 py-0.5 text-xs text-[#0e0e0e]"
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Entity info + scores */}
