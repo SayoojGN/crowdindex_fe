@@ -148,9 +148,7 @@ export default function EntityDetail() {
 
   const completedPhaseKeys = new Set(log.slice(0, -1).map((e) => e.phase))
   const activePhaseKey = log[log.length - 1]?.phase ?? null
-  const stepFillPct = isSucceeded ? 100 : (Math.max(log.length - 1, 0) / 3) * 100
-
-  const getStepStatus = (stepKey: string): 'done' | 'active' | 'failed' | 'pending' => {
+const getStepStatus = (stepKey: string): 'done' | 'active' | 'failed' | 'pending' => {
     if (stepKey === 'complete') return isSucceeded ? 'done' : 'pending'
     if (isSucceeded) return 'done'
     if (isFailed) {
@@ -185,25 +183,17 @@ export default function EntityDetail() {
         {(isBusy || isFailed || isSucceeded) && (
           <div className="w-full space-y-3 pb-1">
             {/* Horizontal step tracker */}
-            <div className="relative">
-              {/* Track line — runs through dot centers */}
-              <div className="absolute top-[7px] left-[7px] right-[7px] h-0.5 bg-[#f0f0f0]">
-                <div
-                  className={[
-                    'h-full transition-all duration-500',
-                    isFailed ? 'bg-[#e55a2b]' : 'bg-[#4664ff]',
-                  ].join(' ')}
-                  style={{ width: `${stepFillPct}%` }}
-                />
-              </div>
-
-              {/* Steps */}
-              <div className="relative flex justify-between">
-                {STEPS.map((step) => {
+            <div className="space-y-1.5">
+              {/* Dots + connectors row */}
+              <div className="flex items-center">
+                {STEPS.map((step, i) => {
                   const status = getStepStatus(step.key)
+                  const segmentFilled = i < STEPS.length - 1 && (
+                    isSucceeded || completedPhaseKeys.has(step.key)
+                  )
                   return (
-                    <div key={step.key} className="flex flex-col items-center gap-1.5">
-                      <span className="relative flex h-3.5 w-3.5">
+                    <div key={step.key} className="contents">
+                      <span className="relative flex h-3.5 w-3.5 shrink-0">
                         {status === 'active' && (
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4664ff] opacity-50" />
                         )}
@@ -217,19 +207,40 @@ export default function EntityDetail() {
                           ].join(' ')}
                         />
                       </span>
-                      <span
-                        className={[
-                          'text-[9px] font-medium',
-                          status === 'done'    ? 'text-[#2d7d28]'
-                          : status === 'active' ? 'text-[#4664ff]'
-                          : status === 'failed' ? 'text-[#e55a2b]'
-                          : 'text-[#6b6b6b]/50',
-                        ].join(' ')}
-                        style={{ fontFamily: 'var(--font-heading)' }}
-                      >
-                        {step.label}
-                      </span>
+                      {i < STEPS.length - 1 && (
+                        <div className="flex-1 h-0.5 bg-[#f0f0f0] overflow-hidden">
+                          <div
+                            className={[
+                              'h-full transition-all duration-500',
+                              isFailed ? 'bg-[#e55a2b]' : 'bg-[#4664ff]',
+                            ].join(' ')}
+                            style={{ width: segmentFilled ? '100%' : '0%' }}
+                          />
+                        </div>
+                      )}
                     </div>
+                  )
+                })}
+              </div>
+
+              {/* Labels row */}
+              <div className="flex justify-between">
+                {STEPS.map((step) => {
+                  const status = getStepStatus(step.key)
+                  return (
+                    <span
+                      key={step.key}
+                      className={[
+                        'text-xs font-medium',
+                        status === 'done'    ? 'text-[#2d7d28]'
+                        : status === 'active' ? 'text-[#4664ff]'
+                        : status === 'failed' ? 'text-[#e55a2b]'
+                        : 'text-[#6b6b6b]/50',
+                      ].join(' ')}
+                      style={{ fontFamily: 'var(--font-heading)' }}
+                    >
+                      {step.label}
+                    </span>
                   )
                 })}
               </div>
@@ -237,14 +248,14 @@ export default function EntityDetail() {
 
             {(isSucceeded || (isPolling && completedPhaseKeys.has('scraping'))) && (
               <div className="space-y-1" style={{ fontFamily: 'var(--font-heading)' }}>
-                <p className="text-[10px] text-[#6b6b6b]">
+                <p className="text-sm text-[#6b6b6b]">
                   <span className="text-[#0e0e0e] font-medium">{analyzeState.scrape?.posts_new}</span>
                   {' '}new posts found
                   {analyzeState.scrape?.posts_found > 0 && (
                     <span className="text-[#6b6b6b]/50"> · {analyzeState.scrape?.posts_found} total scraped</span>
                   )}
                 </p>
-                <p className="text-[10px] text-[#6b6b6b]">
+                <p className="text-sm text-[#6b6b6b]">
                   <span className="text-[#2d7d28] font-medium">{analyzeState.analysis?.relevant_completed}</span>
                   {' '}relevant posts analyzed
                 </p>

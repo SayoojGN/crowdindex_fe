@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import NavLogoButton from './dashboard/NavLogoButton'
 
 const C = {
   surface:        '#fcf9f2',
@@ -43,12 +44,7 @@ function Navbar() {
     >
       <div className="flex justify-between items-center px-8 py-4">
         <div className="flex items-center gap-12">
-          <span
-            className="text-xl font-extrabold tracking-tighter"
-            style={{ color: C.secondary, fontFamily: 'var(--font-heading)' }}
-          >
-            CrowdIndex
-          </span>
+          <NavLogoButton color={C.secondary} />
           <div className="hidden md:flex items-center gap-8">
             {['Platform', 'Intelligence', 'Solutions', 'Resources'].map((l, i) => (
               <a
@@ -80,7 +76,7 @@ function Navbar() {
             className="px-6 py-2.5 rounded-lg text-sm font-bold text-white shadow-sm transition-all active:scale-90"
             style={{ backgroundColor: C.primary, fontFamily: 'var(--font-heading)' }}
           >
-            Get Started
+            Register
           </Link>
         </div>
       </div>
@@ -109,7 +105,7 @@ function Hero() {
           >
             Catch the latest crowd <br />
             <span style={{ color: C.primary, fontStyle: 'italic' }}>opinions</span>
-            {' '}about various topics.
+            {' '}about your products.
           </h1>
 
           {/* <p className="text-lg md:text-xl max-w-2xl mb-12 leading-relaxed" style={{ color: C.onSurfaceVar }}>
@@ -120,20 +116,20 @@ function Hero() {
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mt-15">
             <Link
               href="/auth/signup"
-              className="inline-flex items-center gap-3 pl-7 pr-2 py-2 rounded-full font-bold text-large text-white transition-all hover:brightness-110"
+              className="inline-flex items-center gap-3 py-4 px-6 rounded-full font-bold text-large text-white transition-all hover:brightness-110"
               style={{
                 backgroundColor: C.dark,
                 fontFamily: 'var(--font-heading)',
                 boxShadow: `0 0 0 1.5px ${C.primary}55, 0 8px 32px rgba(0,0,0,0.18)`,
               }}
             >
-              Get Started free
-              <span
+              Get Started
+              {/* <span
                 className="flex items-center justify-center w-9 h-9 rounded-full text-white text-base font-bold shrink-0"
                 style={{ backgroundColor: C.primary }}
               >
-                →
-              </span>
+                
+              </span> */}
             </Link>
             {/* <Link
               href="/auth/login"

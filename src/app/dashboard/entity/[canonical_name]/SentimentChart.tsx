@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '@/store'
 import { fetchEntityMetrics, fetchPostsForDate } from '@/store/slices/entitySlice'
 import type { PostForDate } from '@/store/slices/entitySlice'
@@ -166,7 +166,7 @@ function PostsPanel({
 
   return (
     <>
-      <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+      <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', backgroundColor: '#f7f7f7' }}>
         {/* Section header */}
         <div
           className="flex items-center justify-between px-6 py-3"
@@ -256,7 +256,11 @@ function PostsPanel({
 // ── Main component ────────────────────────────────────────────────────────────
 export default function SentimentChart({ canonicalName }: { canonicalName: string }) {
   const dispatch = useAppDispatch()
-  const { metrics, metricsStatus, metricsError } = useAppSelector((s) => s.entities)
+  const { metrics: rawMetrics, metricsStatus, metricsError } = useAppSelector((s) => s.entities)
+  const metrics = useMemo(
+    () => [...rawMetrics].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
+    [rawMetrics]
+  )
   const [active, setActive] = useState<string>('')
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
   const [selectedPoint, setSelectedPoint] = useState<{ date: string; idx: number } | null>(null)
@@ -265,30 +269,39 @@ export default function SentimentChart({ canonicalName }: { canonicalName: strin
   useEffect(() => {
     if (selectedPoint && containerRef.current) {
       const scrollParent = containerRef.current.closest('main')
-      scrollParent?.scrollBy({ top: 300, behavior: 'smooth' })
+      scrollParent?.scrollBy({ top: 500, behavior: 'smooth' })
     }
   }, [selectedPoint])
 
   useEffect(() => {
-    dispatch(fetchEntityMetrics(canonicalName))
-  }, [canonicalName, dispatch])
+    if (metricsStatus === 'idle') {
+      dispatch(fetchEntityMetrics(canonicalName))
+    }
+  }, [canonicalName, metricsStatus, dispatch])
 
-  const numericDimensions: string[] = metrics.length > 0
-    ? Object.entries(metrics[0].scores)
-        .filter(([, val]) => typeof val === 'number')
-        .map(([key]) => key)
-    : []
+  const numericDimensions = useMemo<string[]>(() => {
+    const seen = new Set<string>()
+    for (const point of metrics) {
+      for (const [key, val] of Object.entries(point.scores)) {
+        if (typeof val === 'number') seen.add(key)
+      }
+    }
+    return Array.from(seen)
+  }, [metrics])
 
   const activeDim = active && numericDimensions.includes(active)
     ? active
     : numericDimensions[0] ?? ''
 
-  const seriesMap: Record<string, number[]> = {}
-  for (const dim of numericDimensions) {
-    seriesMap[dim] = metrics.map((p) =>
-      typeof p.scores[dim] === 'number' ? (p.scores[dim] as number) : 0
-    )
-  }
+  const seriesMap = useMemo(() => {
+    const map: Record<string, number[]> = {}
+    for (const dim of numericDimensions) {
+      map[dim] = metrics.map((p) =>
+        typeof p.scores[dim] === 'number' ? (p.scores[dim] as number) : 0
+      )
+    }
+    return map
+  }, [metrics, numericDimensions])
 
   const activeSeries = seriesMap[activeDim] ?? []
   const total = activeSeries.length
@@ -342,7 +355,17 @@ export default function SentimentChart({ canonicalName }: { canonicalName: strin
       <div style={{ minHeight: 240 }}>
         {/* Chart column */}
         <div className="min-w-0 p-6 pt-4">
-          {metricsStatus === 'loading' && <Spinner />}
+          {(metricsStatus === 'idle' || metricsStatus === 'loading') && (
+            <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: 200 }}>
+              <Spinner className="py-0" />
+              <p
+                className="text-[11px] text-[#6b6b6b]/50 tracking-wide"
+                style={{ fontFamily: 'var(--font-heading)' }}
+              >
+                Loading sentiment data…
+              </p>
+            </div>
+          )}
 
           {metricsStatus === 'failed' && (
             <p className="text-sm text-[#e55a2b] py-8 text-center">{metricsError}</p>

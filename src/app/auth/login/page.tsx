@@ -2,7 +2,6 @@
 
 import { useActionState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { login } from '../actions'
 
 export default function LoginPage() {
@@ -15,7 +14,7 @@ export default function LoginPage() {
     >
       {/* Left decorative panel */}
       <div
-        className="hidden lg:flex flex-col justify-between w-[44%] p-12 relative overflow-hidden"
+        className="hidden lg:flex flex-col justify-between w-[44%] p-5 relative overflow-hidden"
         style={{ backgroundColor: '#1c1c18' }}
       >
         {/* Ambient blobs */}
@@ -28,26 +27,13 @@ export default function LoginPage() {
           style={{ background: '#46606633', filter: 'blur(80px)' }}
         />
 
-        {/* Wordmark */}
-        <span
-          className="text-2xl font-extrabold tracking-tighter relative z-10"
-          style={{ color: '#fcf9f2', fontFamily: 'var(--font-heading)' }}
-        >
-          CrowdIndex
-        </span>
+        {/* Logo */}
+        <Link href="/" className="relative z-10 hover:opacity-80 transition-opacity self-start">
+          <img src="/iconMain.svg" alt="CrowdIndex" className="h-10 w-auto" />
+        </Link>
 
         {/* Illustration + tagline */}
         <div className="relative z-10 flex flex-col items-center gap-8">
-          {/* <div className="relative w-full">
-            <Image
-              src="/image.png"
-              alt="CrowdIndex analytics illustration"
-              width={240}
-              height={160}
-              className="w-full h-auto object-contain drop-shadow-xl"
-              priority
-            />
-          </div> */}
           <div className="text-center space-y-3">
             <p
               className="text-2xl font-extrabold tracking-tight leading-snug"
@@ -170,12 +156,8 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isPending}
-                className="w-full inline-flex items-center justify-between pl-6 pr-2 py-2 rounded-full font-bold text-sm text-white transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: '#1c1c18',
-                  fontFamily: 'var(--font-heading)',
-                  boxShadow: '0 0 0 1.5px rgba(158,66,37,0.35), 0 8px 24px rgba(0,0,0,0.14)',
-                }}
+                className="w-full flex items-center justify-center px-6 py-3.5 rounded-full font-bold text-sm text-white transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#1c1c18', fontFamily: 'var(--font-heading)' }}
               >
                 {isPending ? 'Signing in…' : 'Sign in'}
               </button>
