@@ -159,8 +159,8 @@ export const createEntity = createAsyncThunk<
   { rejectValue: string }
 >('entities/create', async (payload, { rejectWithValue }) => {
   try {
-    const response = await apiClient.post<Entity>('/entity', payload)
-    return response.data
+    const response = await apiClient.post<{ message: string; data: Entity[] }>('/entity', payload)
+    return response.data.data[0]
   } catch (err: unknown) {
     const error = err as { message: string }
     return rejectWithValue(error.message ?? 'Failed to create entity')
@@ -304,7 +304,7 @@ const entitySlice = createSlice({
       })
       .addCase(fetchEntityAnalysis.fulfilled, (state, action) => {
         state.analysisStatus = 'succeeded'
-        state.analysis = action.payload
+        state.analysis = action.payload ?? []
       })
       .addCase(fetchEntityAnalysis.rejected, (state, action) => {
         state.analysisStatus = 'failed'
