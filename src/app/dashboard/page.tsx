@@ -16,7 +16,7 @@ export default async function DashboardPage() {
           Dashboard
         </h1>
         {email && (
-          <p className="text-sm text-[#6b6b6b] mt-1">Signed in as {email}</p>
+          <p className="text-sm text-[#6b6b6b] mt-1">Signed in as User</p>
         )}
       </div>
       <DashboardClient />

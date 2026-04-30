@@ -61,7 +61,7 @@ const SENTIMENT_COLORS = {
 }
 
 function evaluativeDims(post: AnalysisPost) {
-  return post.dimensions.filter((d) => d.dimension_type === 'evaluative')
+  return (post.dimensions ?? []).filter((d) => d.dimension_type === 'evaluative')
 }
 
 function postMatchesSentiment(post: AnalysisPost, sentiment: SentimentFilter): boolean {
@@ -87,17 +87,18 @@ export default function RecentPosts({ canonicalName }: { canonicalName: string }
     dispatch(fetchEntityAnalysis(canonicalName))
   }, [canonicalName, dispatch])
 
+  const analysisRows = analysis ?? []
+
   // Derive unique evaluative dimensions from data
   const allDimensions = Array.from(
     new Set(
-      analysis.flatMap((p) =>
-        p.dimensions.filter((d) => d.dimension_type === 'evaluative').map((d) => d.dimension)
+      analysisRows.flatMap((p) =>
+        (p.dimensions ?? []).filter((d) => d.dimension_type === 'evaluative').map((d) => d.dimension)
       )
     )
   ).sort()
-  console.log(allDimensions)
 
-  const filtered = analysis
+  const filtered = analysisRows
     .filter((p) =>
       evaluativeDims(p).length > 0 &&
       postMatchesDimension(p, activeDimension) &&

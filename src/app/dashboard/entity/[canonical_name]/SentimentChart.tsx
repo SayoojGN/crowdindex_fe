@@ -282,7 +282,8 @@ export default function SentimentChart({ canonicalName }: { canonicalName: strin
   const numericDimensions = useMemo<string[]>(() => {
     const seen = new Set<string>()
     for (const point of metrics) {
-      for (const [key, val] of Object.entries(point.scores)) {
+      const scores = point.scores ?? {}
+      for (const [key, val] of Object.entries(scores)) {
         if (typeof val === 'number') seen.add(key)
       }
     }
@@ -297,7 +298,7 @@ export default function SentimentChart({ canonicalName }: { canonicalName: strin
     const map: Record<string, number[]> = {}
     for (const dim of numericDimensions) {
       map[dim] = metrics.map((p) =>
-        typeof p.scores[dim] === 'number' ? (p.scores[dim] as number) : 0
+        typeof p.scores?.[dim] === 'number' ? (p.scores[dim] as number) : 0
       )
     }
     return map

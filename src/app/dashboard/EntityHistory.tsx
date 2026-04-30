@@ -36,7 +36,7 @@ export default function EntityHistory() {
       {status === 'succeeded' && list.length > 0 && (
         <ul className="flex flex-col gap-0.5 px-3">
           {list.map((entity) => (
-            <li key={entity.id}>
+            <li key={`${entity.id}:${entity.canonical_name}`}>
               <Link
                 href={`/dashboard/entity/${entity.canonical_name}`}
                 className="block rounded-xl px-3 py-2 hover:bg-[#f0f0f0] transition-colors group"

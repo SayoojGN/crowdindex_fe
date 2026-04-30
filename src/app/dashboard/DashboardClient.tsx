@@ -69,62 +69,22 @@ export default function DashboardClient() {
 
         {rowsStatus === 'loading' && <Spinner />}
 
-        {rowsStatus !== 'loading' && (() => {
-          const scoreKeys = rows.length > 0 ? Object.keys(rows[0].scores) : []
-          const colCount = 2 + scoreKeys.length
-          return (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                    {['Entity Name', 'Synonyms', ...scoreKeys.map((k) => `${k} Score`)].map((col) => (
-                      <th
-                        key={col}
-                        className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]/60"
-                        style={{ fontFamily: 'var(--font-heading)' }}
-                      >
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.length === 0 && rowsStatus === 'succeeded' && (
-                    <tr>
-                      <td colSpan={colCount} className="px-6 py-8 text-center text-[#6b6b6b]">
-                        No entities found.
-                      </td>
-                    </tr>
-                  )}
-                  {rows.map((row, i) => (
-                    <tr
-                      key={row.entity.id}
-                      style={{ borderBottom: i < rows.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
-                    >
-                      <td className="px-6 py-4 font-medium text-[#0e0e0e] capitalize">
-                        {row.entity.canonical_name}
-                      </td>
-                      <td className="px-6 py-4 text-[#6b6b6b]">
-                        {row.entity.synonyms?.length > 0
-                          ? row.entity.synonyms.join(', ')
-                          : <span className="text-[#6b6b6b]/40">—</span>}
-                      </td>
-                      {scoreKeys.map((key) => (
-                        <td
-                          key={key}
-                          className="px-6 py-4 tabular-nums font-semibold text-[#4664ff]"
-                          style={{ fontFamily: 'var(--font-heading)' }}
-                        >
-                          {(row.scores[key] ?? 0).toFixed(2)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        })()}
+        {rowsStatus !== 'loading' && (
+          <>
+            {rows.length === 0 && rowsStatus === 'succeeded' && (
+              <div className="px-6 pb-8 text-center text-sm text-[#6b6b6b]">
+                No entities found.
+              </div>
+            )}
+            {rows.length > 0 && (
+              <div className="grid grid-cols-1 gap-5 px-6 pb-6 sm:grid-cols-2">
+                {rows.map((row) => (
+                  <EntityScoreCard key={row.entity.id} row={row} />
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* {rowsStatus === 'succeeded' && rows.length > 0 && (() => {
@@ -166,6 +126,45 @@ function ErrorBanner({ message }: { message: string }) {
   return (
     <div className="rounded-xl bg-[#e55a2b]/10 px-4 py-3 text-sm text-[#e55a2b]">
       {message}
+    </div>
+  )
+}
+
+function EntityScoreCard({ row }: { row: DashboardRow }) {
+  const dimensions = Object.entries(row.scores).sort(([a], [b]) => a.localeCompare(b))
+
+  return (
+    <div
+      className="rounded-2xl border-2 border-[#d8d8d8] bg-white p-5 shadow-[0_4px_24px_rgba(0,0,0,0.06)]"
+      style={{ fontFamily: 'var(--font-heading)' }}
+    >
+      <h3 className="text-base font-semibold capitalize tracking-tight text-[#0e0e0e]">
+        {row.entity.canonical_name}
+      </h3>
+      <p className="mt-1 text-xs uppercase tracking-widest text-[#6b6b6b]/70">
+        Synonyms
+      </p>
+      <p className="mt-0.5 text-sm text-[#6b6b6b] leading-snug">
+        {row.entity.synonyms?.length > 0 ? row.entity.synonyms.join(', ') : '—'}
+      </p>
+
+      <p className="mt-4 text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]/60">
+        Dimension scores
+      </p>
+      {dimensions.length === 0 ? (
+        <p className="mt-2 text-sm text-[#6b6b6b]/50">No scores for this entity.</p>
+      ) : (
+        <dl className="mt-2 space-y-1.5">
+          {dimensions.map(([key, value]) => (
+            <div key={key} className="flex items-baseline justify-between gap-3 text-sm">
+              <dt className="text-[#6b6b6b] capitalize">{key.replace(/_/g, ' ')}</dt>
+              <dd className="shrink-0 tabular-nums font-semibold text-[#4664ff]">
+                {value.toFixed(2)}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
     </div>
   )
 }
