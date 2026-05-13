@@ -10,6 +10,7 @@ import {
   resetCreateStatus,
 } from '@/store/slices/entitySlice'
 import { X } from 'lucide-react'
+import PRODUCT_TYPES from '@/lib/productTypeSuggestions.json'
 
 type DimensionType = 'evaluative' | 'enumerative'
 
@@ -32,12 +33,14 @@ export default function AddEntityModal({ isOpen, onClose }: Props) {
   const [canonicalName, setCanonicalName] = useState('')
   const [synonymsInput, setSynonymsInput] = useState('')
   const [dimensions, setDimensions] = useState<DimensionRow[]>([])
+  const [productType, setProductType] = useState('')
 
   useEffect(() => {
     if (!isOpen) {
       setCanonicalName('')
       setSynonymsInput('')
       setDimensions([])
+      setProductType('')
     }
   }, [isOpen])
 
@@ -86,6 +89,7 @@ export default function AddEntityModal({ isOpen, onClose }: Props) {
       createEntity({
         canonical_name: canonicalName.trim(),
         ...(synonyms.length > 0 && { synonyms }),
+        ...(productType && { metadata: { product_type: productType } }),
         ...(validDimensions.length > 0 && {
           dimensions: validDimensions.map((d) => ({ name: d.name.trim(), type: d.type })),
         }),
@@ -168,6 +172,59 @@ export default function AddEntityModal({ isOpen, onClose }: Props) {
             />
             <p className="text-xs text-[#6b6b6b]/60">Separate multiple synonyms with commas.</p>
           </div>
+
+          {/* Product Type */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="modal_product_type"
+              className="text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              Product Type
+            </label>
+            <select
+              id="modal_product_type"
+              value={productType}
+              onChange={(e) => setProductType(e.target.value)}
+              className="w-full bg-[#f0f0f0] rounded-lg px-4 py-3 text-sm text-[#0e0e0e] border-0 border-b-2 border-b-transparent focus:border-b-[#4664ff] focus:outline-none transition-colors appearance-none cursor-pointer"
+            >
+              <option value="">Select a product type (optional)</option>
+              {PRODUCT_TYPES.map((pt) => (
+                <option key={pt.id} value={pt.id}>{pt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Suggested Dimensions */}
+          {productType !== '' && (() => {
+            const suggestions = PRODUCT_TYPES.find((p) => p.id === productType)?.suggested_dimensions ?? []
+            const available = suggestions.filter(
+              (s) => !dimensions.some((d) => d.name.toLowerCase() === s.name.toLowerCase())
+            )
+            return available.length > 0 ? (
+              <div className="space-y-1.5">
+                <label
+                  className="text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]"
+                  style={{ fontFamily: 'var(--font-heading)' }}
+                >
+                  Suggested Dimensions
+                </label>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const pick = available.find((s) => s.name === e.target.value)
+                    if (pick) setDimensions((prev) => [...prev, { name: pick.name, type: pick.type as DimensionType }])
+                  }}
+                  className="w-full bg-[#f0f0f0] rounded-lg px-4 py-3 text-sm text-[#0e0e0e] border-0 border-b-2 border-b-transparent focus:border-b-[#4664ff] focus:outline-none transition-colors appearance-none cursor-pointer"
+                >
+                  <option value="">+ Add suggested dimension…</option>
+                  {available.map((s) => (
+                    <option key={s.name} value={s.name}>{s.name} ({s.type})</option>
+                  ))}
+                </select>
+              </div>
+            ) : null
+          })()}
 
           {/* Dimensions */}
           <div className="space-y-2">

@@ -1,0 +1,57 @@
+[
+  {
+    "id": "drug",
+    "label": "Drug / Pharmaceutical",
+    "suggested_dimensions": [
+      { "name": "Efficacy", "type": "evaluative" },
+      { "name": "Side Effects", "type": "evaluative" },
+      { "name": "Tolerability", "type": "evaluative" },
+      { "name": "Cost / Affordability", "type": "evaluative" },
+      { "name": "Dosage Form", "type": "enumerative" },
+      { "name": "Drug Interactions", "type": "evaluative" }
+    ]
+  },
+  {
+    "id": "medical_device",
+    "label": "Medical Device",
+    "suggested_dimensions": [
+      { "name": "Ease of Use", "type": "evaluative" },
+      { "name": "Accuracy", "type": "evaluative" },
+      { "name": "Reliability", "type": "evaluative" },
+      { "name": "Safety Profile", "type": "evaluative" },
+      { "name": "Device Class", "type": "enumerative" },
+      { "name": "Cost / Affordability", "type": "evaluative" }
+    ]
+  },
+  {
+    "id": "otc_supplement",
+    "label": "OTC / Supplement",
+    "suggested_dimensions": [
+      { "name": "Effectiveness", "type": "evaluative" },
+      { "name": "Safety Profile", "type": "evaluative" },
+      { "name": "Taste / Palatability", "type": "evaluative" },
+      { "name": "Cost / Affordability", "type": "evaluative" },
+      { "name": "Formulation Type", "type": "enumerative" }
+    ]
+  },
+  {
+    "id": "therapeutic_class",
+    "label": "Therapeutic Class",
+    "suggested_dimensions": [
+      { "name": "Treatment Efficacy", "type": "evaluative" },
+      { "name": "Safety Profile", "type": "evaluative" },
+      { "name": "Patient Adherence", "type": "evaluative" },
+      { "name": "Mechanism of Action", "type": "enumerative" },
+      { "name": "Cost / Affordability", "type": "evaluative" }
+    ]
+  },
+  {
+    "id": "other",
+    "label": "Other",
+    "suggested_dimensions": [
+      { "name": "Quality", "type": "evaluative" },
+      { "name": "Value for Money", "type": "evaluative" },
+      { "name": "User Satisfaction", "type": "evaluative" }
+    ]
+  }
+]
