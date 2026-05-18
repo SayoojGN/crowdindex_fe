@@ -499,6 +499,23 @@ export default function SentimentChart({ canonicalName }: { canonicalName: strin
                 {/* Y-axis line */}
                 <line x1={PAD.left} y1={PAD.top} x2={PAD.left} y2={PAD.top + CHART_H} stroke="rgba(0,0,0,0.08)" strokeWidth={1} />
 
+                {/* Y-axis dimension label */}
+                {activeDim && (
+                  <text
+                    x={18}
+                    y={PAD.top + CHART_H / 2}
+                    textAnchor="middle"
+                    fontSize={9}
+                    fontWeight={400}
+                    fill={dimensionColor(activeDim)}
+                    fontFamily="var(--font-heading)"
+                    transform={`rotate(-90, 18, ${PAD.top + CHART_H / 2})`}
+                    style={{ textTransform: 'capitalize' }}
+                  >
+                    {activeDim.replace(/_/g, ' ')} score
+                  </text>
+                )}
+
                 {/* Transparent hit-area rects */}
                 {activeSeries.map((_, i) => {
                   const cx = xAt(i, total)
