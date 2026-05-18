@@ -6,6 +6,21 @@ import type { DimensionScore } from '@/store/slices/entitySlice'
 
 const PAGE_SIZE = 20
 
+/** Bucketing key so "Side Effects" and side_effects share one section. */
+function normalizedDimensionKey(dimension: string): string {
+  return dimension
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '')
+}
+
+function formatDimensionTitle(dim: string): string {
+  const s = dim.trim().replace(/_/g, ' ')
+  if (!s) return dim.trim()
+  return s.replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 function EvidenceTableSkeleton() {
   const col = Array.from({ length: 10 })
   return (
@@ -58,9 +73,11 @@ interface GroupedItem {
 
 function EvidenceModal({
   group,
+  dimensionTitle,
   onClose,
 }: {
   group: GroupedItem
+  dimensionTitle: string
   onClose: () => void
 }) {
   const overlayRef = useRef<HTMLDivElement>(null)
@@ -91,7 +108,7 @@ function EvidenceModal({
               className="text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]/60 mb-0.5"
               style={{ fontFamily: 'var(--font-heading)' }}
             >
-              Side Effect
+              {dimensionTitle}
             </p>
             <h2 className="text-[15px] font-semibold text-[#0e0e0e] leading-snug">
               {group.item_name}
@@ -188,19 +205,7 @@ function GroupRow({ group, onClick, hasSeverityCol }: { group: GroupedItem; onCl
   )
 }
 
-export default function EvidenceTable() {
-  const { scores, scoresStatus } = useAppSelector((s) => s.entities)
-  const [page, setPage] = useState(0)
-  const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState<GroupedItem | null>(null)
-
-  if (scoresStatus === 'loading') return <EvidenceTableSkeleton />
-  if (scoresStatus !== 'succeeded') return null
-
-  const allItems = scores.filter((s) => s.dimension === 'side_effects')
-  if (allItems.length === 0) return null
-
-  // Group by item_name
+function groupItemsByName(allItems: DimensionScore[]): GroupedItem[] {
   const grouped: GroupedItem[] = []
   const seen = new Map<string, GroupedItem>()
   for (const entry of allItems) {
@@ -217,7 +222,23 @@ export default function EvidenceTable() {
       if (!g.topSeverity) g.topSeverity = entry.severity
     }
   }
+  return grouped
+}
 
+function EnumerativeEvidenceSection({
+  bucketKey,
+  displayTitle,
+  items,
+}: {
+  bucketKey: string
+  displayTitle: string
+  items: DimensionScore[]
+}) {
+  const [page, setPage] = useState(0)
+  const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState<GroupedItem | null>(null)
+
+  const grouped = groupItemsByName(items)
   const hasSeverityCol = grouped.some((g) => g.hasSeverity)
 
   const q = query.trim().toLowerCase()
@@ -234,10 +255,11 @@ export default function EvidenceTable() {
   const start = safePage * PAGE_SIZE + 1
   const end = Math.min((safePage + 1) * PAGE_SIZE, filtered.length)
 
+  const searchPlaceholder = `Search ${displayTitle.toLowerCase()}…`
+
   return (
     <>
       <div className="rounded-2xl bg-white shadow-[0_4px_24px_rgba(0,0,0,0.04)] overflow-hidden">
-        {/* Header */}
         <div
           className="flex items-center justify-between gap-4 px-6 py-4"
           style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}
@@ -246,24 +268,23 @@ export default function EvidenceTable() {
             className="text-[10px] font-semibold uppercase tracking-widest text-[#6b6b6b]/60 shrink-0"
             style={{ fontFamily: 'var(--font-heading)' }}
           >
-            Side Effects
+            {displayTitle}
           </span>
           <input
             type="text"
             value={query}
             onChange={(e) => { setQuery(e.target.value); setPage(0) }}
-            placeholder="Search side effects…"
+            placeholder={searchPlaceholder}
             className="w-56 rounded-lg bg-[#f5f5f5] px-3 py-1.5 text-xs text-[#0e0e0e] outline-none placeholder:text-[#6b6b6b]/50 focus:ring-1 focus:ring-[#4664ff]/30"
             style={{ fontFamily: 'var(--font-heading)' }}
           />
         </div>
 
-        {/* Two columns */}
         <div className="grid grid-cols-2">
           <div style={{ borderRight: '1px solid rgba(0,0,0,0.06)' }}>
             {left.map((group, i) => (
               <div
-                key={group.item_name}
+                key={`${bucketKey}-${group.item_name}`}
                 style={{ borderBottom: i < left.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
               >
                 <GroupRow group={group} onClick={() => setSelected(group)} hasSeverityCol={hasSeverityCol} />
@@ -273,7 +294,7 @@ export default function EvidenceTable() {
           <div>
             {right.map((group, i) => (
               <div
-                key={group.item_name}
+                key={`${bucketKey}-${group.item_name}`}
                 style={{ borderBottom: i < right.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none' }}
               >
                 <GroupRow group={group} onClick={() => setSelected(group)} hasSeverityCol={hasSeverityCol} />
@@ -282,7 +303,6 @@ export default function EvidenceTable() {
           </div>
         </div>
 
-        {/* Pagination footer */}
         {totalPages > 1 && (
           <div
             className="flex items-center justify-between px-6 py-3"
@@ -317,8 +337,48 @@ export default function EvidenceTable() {
       </div>
 
       {selected && (
-        <EvidenceModal group={selected} onClose={() => setSelected(null)} />
+        <EvidenceModal
+          group={selected}
+          dimensionTitle={displayTitle}
+          onClose={() => setSelected(null)}
+        />
       )}
     </>
+  )
+}
+
+export default function EvidenceTable() {
+  const { scores, scoresStatus } = useAppSelector((s) => s.entities)
+
+  if (scoresStatus === 'loading') return <EvidenceTableSkeleton />
+  if (scoresStatus !== 'succeeded') return null
+
+  const enumerative = scores.filter((s) => s.dimension_type === 'enumerative')
+  if (enumerative.length === 0) return null
+
+  const buckets = new Map<string, { displayTitle: string; items: DimensionScore[] }>()
+  for (const row of enumerative) {
+    const nk = normalizedDimensionKey(row.dimension)
+    let bucket = buckets.get(nk)
+    if (!bucket) {
+      bucket = { displayTitle: formatDimensionTitle(row.dimension), items: [] }
+      buckets.set(nk, bucket)
+    }
+    bucket.items.push(row)
+  }
+
+  const sections = [...buckets.entries()].sort(([a], [b]) => a.localeCompare(b))
+
+  return (
+    <div className="flex flex-col gap-8 w-full">
+      {sections.map(([key, { displayTitle, items }]) => (
+        <EnumerativeEvidenceSection
+          key={key}
+          bucketKey={key}
+          displayTitle={displayTitle}
+          items={items}
+        />
+      ))}
+    </div>
   )
 }

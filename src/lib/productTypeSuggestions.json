@@ -4,7 +4,7 @@
     "label": "Drug / Pharmaceutical",
     "suggested_dimensions": [
       { "name": "Efficacy", "type": "evaluative" },
-      { "name": "Side Effects", "type": "evaluative" },
+      { "name": "Side Effects", "type": "enumerative" },
       { "name": "Tolerability", "type": "evaluative" },
       { "name": "Cost / Affordability", "type": "evaluative" },
       { "name": "Dosage Form", "type": "enumerative" },
