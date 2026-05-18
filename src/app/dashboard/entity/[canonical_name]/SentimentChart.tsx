@@ -265,12 +265,17 @@ export default function SentimentChart({ canonicalName }: { canonicalName: strin
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
   const [selectedPoint, setSelectedPoint] = useState<{ date: string; idx: number } | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const wasSelectedRef = useRef(false)
 
   useEffect(() => {
-    if (selectedPoint && containerRef.current) {
-      const scrollParent = containerRef.current.closest('main')
+    if (!containerRef.current) return
+    const scrollParent = containerRef.current.closest('main')
+    if (selectedPoint && !wasSelectedRef.current) {
       scrollParent?.scrollBy({ top: 500, behavior: 'smooth' })
+    } else if (!selectedPoint && wasSelectedRef.current) {
+      scrollParent?.scrollBy({ top: -500, behavior: 'smooth' })
     }
+    wasSelectedRef.current = selectedPoint !== null
   }, [selectedPoint])
 
   useEffect(() => {
